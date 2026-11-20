@@ -2,6 +2,8 @@
 
 ![RunningLinux](RunningLinux.png)
 
+[TOC]
+
 ### What's this?
 
 This is the modification of (Debian) Linux (Trixie) (by means of a patchset) for the **ASUS Vivobook S16** (ARM64 aka AArch64).
@@ -96,4 +98,7 @@ For the present, you have to live with the patches provided by this GitHub repo.
 
 #### Okay, I'm convinced - what's next?
 
-There is a collection of markdown files in this repo. Please read them entirely. They guide you through the process.
+There is a collection of markdown files in this repo. Please read them entirely. They guide you through the process. They are numbered XX-<topic>.
+
+
+

@@ -1,0 +1,32 @@
+From 4c23c52bd4aebeac22bd5dc401cc7c72ad27ff9e Mon Sep 17 00:00:00 2001
+From: "Ingo A. Kubbilun" <ingo.kubbilun@gmail.com>
+Date: Tue, 10 Nov 2026 18:14:49 +0100
+Subject: [PATCH 3/6] firmware: qcom: scm: allow QSEECOM on ASUS Vivobook S16
+ S3607QA
+
+Enables the uefisecapp client (EFI variables, efibootmgr, RTC offset).
+
+An AI coding assistant (Anthropic Claude) drafted this change; I tested
+efivars, efibootmgr and the RTC on the device.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01DkUieTSPeVK2F2nM8a8WhL
+---
+ drivers/firmware/qcom/qcom_scm.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/drivers/firmware/qcom/qcom_scm.c b/drivers/firmware/qcom/qcom_scm.c
+index b1a821d..8b5c857 100644
+--- a/drivers/firmware/qcom/qcom_scm.c
++++ b/drivers/firmware/qcom/qcom_scm.c
+@@ -2227,6 +2227,7 @@ EXPORT_SYMBOL_GPL(qcom_scm_qseecom_app_send);
+ static const struct of_device_id qcom_scm_qseecom_allowlist[] __maybe_unused = {
+ 	{ .compatible = "asus,vivobook-s15" },
+ 	{ .compatible = "asus,vivobook-s15-x1p4" },
++	{ .compatible = "asus,vivobook-s16-s3607qa" },
+ 	{ .compatible = "asus,zenbook-a14-ux3407na" },
+ 	{ .compatible = "asus,zenbook-a14-ux3407qa" },
+ 	{ .compatible = "asus,zenbook-a14-ux3407ra" },
+-- 
+2.43.0
+

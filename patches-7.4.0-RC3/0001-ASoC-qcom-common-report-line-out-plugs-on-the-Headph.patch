@@ -1,0 +1,48 @@
+From 7636188b89ea7cb474d0b0a76e8dde244e1f5869 Mon Sep 17 00:00:00 2001
+From: "Ingo A. Kubbilun" <ingo.kubbilun@gmail.com>
+Date: Tue, 10 Nov 2026 18:06:11 +0100
+Subject: [PATCH 1/6] ASoC: qcom: common: report line-out plugs on the
+ Headphone Jack pin
+
+The WCD MBHC classifies high-impedance loads (above linein_th, 5 kOhm
+on wcd938x) such as active speakers as SND_JACK_LINEOUT. The
+"Headphone Jack" pin only matched SND_JACK_HEADPHONE, so the jack
+control stayed off and userspace (UCM JackControl) never switched to
+the headphone output for those loads.
+
+Seen on ASUS Vivobook S16 S3607QA (X1P42100, WCD9385): active
+speakers measured at ~20 kOhm per channel were reported as LINEOUT only.
+
+An AI coding assistant (Anthropic Claude) analyzed the jack detection
+debug output (evtest, MBHC dynamic debug) and drafted this change; I
+tested it on the device with headphones and active speakers.
+
+Fixes: 4c2c935a278e ("ASoC: qcom: common: add kcontrol to jack pins")
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01DkUieTSPeVK2F2nM8a8WhL
+---
+ sound/soc/qcom/common.c | 6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
+
+diff --git a/sound/soc/qcom/common.c b/sound/soc/qcom/common.c
+index 5dc954d..af5cacd 100644
+--- a/sound/soc/qcom/common.c
++++ b/sound/soc/qcom/common.c
+@@ -335,7 +335,11 @@ static struct snd_soc_jack_pin qcom_headset_jack_pins[] = {
+ 	},
+ 	{
+ 		.pin = "Headphone Jack",
+-		.mask = SND_JACK_HEADPHONE,
++		/*
++		 * WCD MBHC reports loads above linein_th (5 kOhm) as LINEOUT,
++		 * e.g. active speakers; treat them like headphones for routing.
++		 */
++		.mask = SND_JACK_HEADPHONE | SND_JACK_LINEOUT,
+ 	},
+ };
+ 
+
+base-commit: ee83899302a0457a3ba47464a13e8682bd7ba27d
+-- 
+2.43.0
+

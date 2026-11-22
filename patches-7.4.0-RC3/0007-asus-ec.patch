@@ -1,0 +1,140 @@
+commit 82cf6cab4001a59f9346e95f1863ee71179a925d
+Author: Sombre-Osmoze <sombre@osmoze.xyz>
+Date:   Mon Nov 9 12:24:48 2026 +0100
+
+    ACPI: platform_profile: allow registration on non-ACPI (DT) systems
+    
+    On DT-booted arm64 laptops acpi_disabled is set, so platform_profile_init()
+    bails out and drivers cannot register a platform_profile class device.
+    Skip the legacy /sys/firmware/acpi/platform_profile node when acpi_kobj is
+    NULL; the class interface (/sys/class/platform-profile/) keeps working.
+    
+    Taken from https://github.com/Sombre-Osmoze/asus-zenbook-a14-ec
+    (patches/0001-platform_profile-allow-non-ACPI-systems.patch).
+    
+    Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+    Claude-Session: https://claude.ai/code/session_01DkUieTSPeVK2F2nM8a8WhL
+    Signed-off-by: Ingo A. Kubbilun <ingo.kubbilun@gmail.com>
+
+diff --git a/drivers/platform/profile/core.c b/drivers/platform/profile/core.c
+index 148f14a5fbe8..cc3056f8a4b9 100644
+--- a/drivers/platform/profile/core.c
++++ b/drivers/platform/profile/core.c
+@@ -265,6 +265,9 @@ static ssize_t profile_store(struct device *dev,
+ 
+ 	profile_notify();
+ 
++	if (acpi_kobj)
++		sysfs_notify(acpi_kobj, NULL, "platform_profile");
++
+ 	return count;
+ }
+ static DEVICE_ATTR_RW(profile);
+@@ -492,7 +495,12 @@ static ssize_t platform_profile_store(struct kobject *kobj,
+ 			return ret;
+ 	}
+ 
++<<<<<<< HEAD:drivers/platform/profile/core.c
+ 	profile_notify();
++=======
++	if (acpi_kobj)
++		sysfs_notify(acpi_kobj, NULL, "platform_profile");
++>>>>>>> ACPI: platform_profile: allow registration on non-ACPI (DT) systems:drivers/acpi/platform_profile.c
+ 
+ 	return count;
+ }
+@@ -573,7 +581,12 @@ void platform_profile_notify(struct device *dev)
+ 	scoped_cond_guard(mutex_intr, return, &profile_lock) {
+ 		_notify_class_profile(dev, NULL);
+ 	}
++<<<<<<< HEAD:drivers/platform/profile/core.c
+ 	profile_notify();
++=======
++	if (acpi_kobj)
++		sysfs_notify(acpi_kobj, NULL, "platform_profile");
++>>>>>>> ACPI: platform_profile: allow registration on non-ACPI (DT) systems:drivers/acpi/platform_profile.c
+ }
+ EXPORT_SYMBOL_GPL(platform_profile_notify);
+ 
+@@ -620,7 +633,12 @@ int platform_profile_cycle(void)
+ 			return err;
+ 	}
+ 
++<<<<<<< HEAD:drivers/platform/profile/core.c
+ 	profile_notify();
++=======
++	if (acpi_kobj)
++		sysfs_notify(acpi_kobj, NULL, "platform_profile");
++>>>>>>> ACPI: platform_profile: allow registration on non-ACPI (DT) systems:drivers/acpi/platform_profile.c
+ 
+ 	return 0;
+ }
+@@ -695,11 +713,22 @@ struct device *platform_profile_register(struct device *dev, const char *name,
+ 	scoped_guard(mutex, &profile_lock)
+ 		list_add_tail(&to_pprof_handler(ppdev)->node, &profile_handlers);
+ 
++<<<<<<< HEAD:drivers/platform/profile/core.c
+ 	profile_notify();
+ 
+ 	err = profile_update();
+ 	if (err)
+ 		goto cleanup_cur;
++=======
++	if (acpi_kobj)
++		sysfs_notify(acpi_kobj, NULL, "platform_profile");
++
++	if (acpi_kobj) {
++		err = sysfs_update_group(acpi_kobj, &platform_profile_group);
++		if (err)
++			goto cleanup_cur;
++	}
++>>>>>>> ACPI: platform_profile: allow registration on non-ACPI (DT) systems:drivers/acpi/platform_profile.c
+ 
+ 	return ppdev;
+ 
+@@ -738,8 +767,15 @@ void platform_profile_remove(struct device *dev)
+ 	ida_free(&platform_profile_ida, pprof->minor);
+ 	device_unregister(&pprof->dev);
+ 
++<<<<<<< HEAD:drivers/platform/profile/core.c
+ 	profile_notify();
+ 	profile_update();
++=======
++	if (acpi_kobj)
++		sysfs_notify(acpi_kobj, NULL, "platform_profile");
++	if (acpi_kobj)
++		sysfs_update_group(acpi_kobj, &platform_profile_group);
++>>>>>>> ACPI: platform_profile: allow registration on non-ACPI (DT) systems:drivers/acpi/platform_profile.c
+ }
+ EXPORT_SYMBOL_GPL(platform_profile_remove);
+ 
+@@ -791,16 +827,29 @@ static int __init platform_profile_init(void)
+ 	if (err)
+ 		return err;
+ 
++<<<<<<< HEAD:drivers/platform/profile/core.c
+ 	err = profile_compat_init();
+ 	if (err)
+ 		class_unregister(&platform_profile_class);
++=======
++	if (acpi_kobj) {
++		err = sysfs_create_group(acpi_kobj, &platform_profile_group);
++		if (err)
++			class_unregister(&platform_profile_class);
++	}
++>>>>>>> ACPI: platform_profile: allow registration on non-ACPI (DT) systems:drivers/acpi/platform_profile.c
+ 
+ 	return err;
+ }
+ 
+ static void __exit platform_profile_exit(void)
+ {
++<<<<<<< HEAD:drivers/platform/profile/core.c
+ 	profile_compat_exit();
++=======
++	if (acpi_kobj)
++		sysfs_remove_group(acpi_kobj, &platform_profile_group);
++>>>>>>> ACPI: platform_profile: allow registration on non-ACPI (DT) systems:drivers/acpi/platform_profile.c
+ 	class_unregister(&platform_profile_class);
+ }
+ subsys_initcall_sync(platform_profile_init);

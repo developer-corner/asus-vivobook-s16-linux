@@ -1,0 +1,61 @@
+commit 22fc12c07fd588cd5eb375ae4c00f668bf7b326a
+Author: Ingo Kubbilun <ingo.kubbilun@gmail.com>
+Date:   Thu Nov 12 20:33:10 2026 +0100
+
+    HID: asus-ec: document ASUS Vivobook S16 S3607QA support
+    
+    The Vivobook S16 S3607QA uses the same keyboard (0B05:4543) as the
+    Vivobook S15, so it is already handled; mention it in Kconfig and the
+    driver description.
+    
+    Tested on ASUS Vivobook S16 S3607QA: backlight on/off and levels work,
+    the EC's idle pulsing stops once the driver is bound.
+    
+    Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+    Claude-Session: https://claude.ai/code/session_01DkUieTSPeVK2F2nM8a8WhL
+    Signed-off-by: Ingo A. Kubbilun <ingo.kubbilun@gmail.com>
+
+diff --git a/drivers/hid/Kconfig b/drivers/hid/Kconfig
+index 5f56dce73ab5..2247bf0cafc5 100644
+--- a/drivers/hid/Kconfig
++++ b/drivers/hid/Kconfig
+@@ -208,7 +208,7 @@ config HID_ASUS_EC
+ 	help
+ 	  Keyboard backlight (LED class asus::kbd_backlight) and Fn hotkeys
+ 	  for the EC-attached I2C-HID keyboards of the ASUS Zenbook A14
+-	  (0B05:0220) and Vivobook S15 (0B05:4543).
++	  (0B05:0220) and Vivobook S15/S16 (0B05:4543).
+ 
+ config HID_AUREAL
+ 	tristate "Aureal"
+diff --git a/drivers/hid/hid-asus-ec.c b/drivers/hid/hid-asus-ec.c
+index 9689cad7b08d..280dde6d852a 100644
+--- a/drivers/hid/hid-asus-ec.c
++++ b/drivers/hid/hid-asus-ec.c
+@@ -1,6 +1,9 @@
+ // SPDX-License-Identifier: GPL-2.0-or-later
+ /*
+- * ASUS EC HID driver for Zenbook A14 (UX3407QA)
++ * ASUS EC HID driver for Zenbook A14 (UX3407QA), Vivobook S15 and S16
++ *
++ * In-tree import of https://github.com/Sombre-Osmoze/asus-zenbook-a14-ec
++ * (PR #2, commit 7e7eeda). Keyboard 0B05:4543 is shared by S15 and S16.
+  *
+  * EC I2C HID driver for keyboard backlight and Fn hotkeys.
+  *
+@@ -21,7 +24,7 @@
+ 
+ #define ASUS_VENDOR_ID		0x0B05
+ #define ASUS_PRODUCT_ID_A14		0x0220
+-#define ASUS_PRODUCT_ID_S15		0x4543
++#define ASUS_PRODUCT_ID_S15		0x4543	/* also Vivobook S16 S3607QA */
+ 
+ #define A14_EC_REPORT_ID	0x5A
+ #define A14_EC_REPORT_SIZE	64
+@@ -432,5 +435,5 @@ static struct hid_driver hid_asus_ec_driver = {
+ };
+ module_hid_driver(hid_asus_ec_driver);
+ MODULE_AUTHOR("Alexandru Marc Serdeliuc <serdeliuk@yahoo.com>");
+-MODULE_DESCRIPTION("ASUS EC HID driver for Zenbook A14 (UX3407QA)");
++MODULE_DESCRIPTION("ASUS EC HID driver (keyboard backlight, Fn keys) for Snapdragon X laptops");
+ MODULE_LICENSE("GPL");

@@ -1,0 +1,189 @@
+commit fa574a5a9e78af9128b5622a444b9742a4248987
+Author: Ingo Kubbilun <ingo.kubbilun@gmail.com>
+Date:   Thu Nov 12 20:33:09 2026 +0100
+
+    platform/arm64: asus-x1-ec: add ASUS Vivobook S16 S3607QA (X1P42100)
+    
+    The Vivobook S 16 S3607QA uses the same EC (0x5b) and fan controller
+    (0x76) on b94000.i2c as the Vivobook S15 (ACPI SL5B/UMPC), so add it to
+    the S15 code path.
+    
+    The X1P42100 (Purwa) has only two CPU clusters, so select its thermal
+    zones (cpu0-0-top, cpu1-0-top, cpuss0-top, gpuss-0) at runtime when the
+    machine is compatible with "qcom,x1p42100".
+    
+    Also:
+     - refuse to load unless the machine compatible is one of the supported
+       ASUS models; the driver instantiates its I2C clients by hand
+     - guard the platform_profile code with the new, default-off
+       CONFIG_EC_ASUS_X1_PLATFORM_PROFILE (the old CONFIG_PLATFORM_PROFILE
+       guard never matched, so the code was dead and unused)
+    
+    Tested on ASUS Vivobook S16 S3607QA, Linux 7.3.3: EC and fan controller
+    found, 4 thermal zones attached, the fans follow the SoC temperature
+    (about 60-74 C under make -j8, fan off at idle).
+    
+    Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+    Claude-Session: https://claude.ai/code/session_01DkUieTSPeVK2F2nM8a8WhL
+    Signed-off-by: Ingo A. Kubbilun <ingo.kubbilun@gmail.com>
+
+diff --git a/drivers/platform/arm64/Kconfig b/drivers/platform/arm64/Kconfig
+index 5deead1f3529..3bbd42af82a0 100644
+--- a/drivers/platform/arm64/Kconfig
++++ b/drivers/platform/arm64/Kconfig
+@@ -137,8 +137,8 @@ config EC_ASUS_X1
+ 	depends on CPU_FREQ
+ 	help
+ 	  Say M here to enable the Embedded Controller driver for the ASUS
+-	  Zenbook A14 (UX3407QA/RA) and Vivobook S15 (S5507QA). The EC sits
+-	  at 0x5b (fan controller at 0x76) on the
++	  Zenbook A14 (UX3407QA/RA), Vivobook S15 (S5507QA) and Vivobook S16
++	  (S3607QA). The EC sits at 0x5b (fan controller at 0x76) on the
+ 	  b94000.i2c bus; the driver instantiates the clients itself.
+ 
+ 	  It exposes fan speed/PWM and the EC temperature via hwmon and, on
+@@ -150,6 +150,21 @@ config EC_ASUS_X1
+ 	  you are doing: the Vivobook EC hard-resets the machine if the
+ 	  temperature feed stops for ~2 minutes while in manual mode.
+ 
++	  The module refuses to load on other machines.
++
++config EC_ASUS_X1_PLATFORM_PROFILE
++	bool "Experimental: platform_profile support (quiet/balanced/performance)"
++	depends on EC_ASUS_X1 && ACPI
++	select ACPI_PLATFORM_PROFILE
++	help
++	  Register a platform_profile device. "quiet" switches the EC to
++	  manual mode with the fans OFF and caps the CPUs at 1.44 GHz,
++	  "performance" uses manual mode with a fixed high PWM, "balanced"
++	  returns to EC auto mode. Untested upstream; needs the
++	  platform_profile non-ACPI patch on DT-booted systems.
++
++	  If unsure, say N.
++
+ config EC_QCOM_HAMOA
+ 	tristate "Embedded Controller driver for Qualcomm Hamoa/Glymur reference devices"
+ 	depends on ARCH_QCOM || COMPILE_TEST
+diff --git a/drivers/platform/arm64/asus-x1-ec.c b/drivers/platform/arm64/asus-x1-ec.c
+index 8766186eb3ec..f90ce627a4ae 100644
+--- a/drivers/platform/arm64/asus-x1-ec.c
++++ b/drivers/platform/arm64/asus-x1-ec.c
+@@ -1,7 +1,15 @@
+ // SPDX-License-Identifier: GPL-2.0-only
+ /*
+- * ASUS Zenbook A14 (UX3407RA) / ASUS Vivobook S 15 S5507QA_S5507QAD
+- * Embedded Controller driver — PoC
++ * ASUS Zenbook A14 (UX3407RA) / ASUS Vivobook S 15 S5507QA_S5507QAD /
++ * ASUS Vivobook S 16 S3607QA Embedded Controller driver — PoC
++ *
++ * In-tree import of https://github.com/Sombre-Osmoze/asus-zenbook-a14-ec
++ * (PR #2 "Support Vivobook S15", commit 7e7eeda), adapted for:
++ *  - ASUS Vivobook S 16 S3607QA (X1P42100): same EC (0x5b) and fan
++ *    controller (0x76) on b94000.i2c as the S15 (ACPI SL5B/UMPC)
++ *  - runtime X1P42100 (Purwa) thermal-zone selection
++ *  - refusing to load on machines other than the supported ASUS models
++ *  - platform_profile support only with CONFIG_EC_ASUS_X1_PLATFORM_PROFILE
+  *
+  * Step 6: dual-fan support.
+  *
+@@ -141,14 +149,23 @@
+ 
+ /* Thermal zones to feed to the EC (max of). */
+ #define ASUS_EC_MAX_ZONES	4
+-static const char * const asus_ec_thermal_zones[] = {
++static const char * const asus_ec_zones_x1e[] = {
+ 	"cpu0-0-top-thermal",
+ 	"cpu1-0-top-thermal",
+ 	"cpu2-0-top-thermal",
+ 	"gpuss-0-thermal",
+ };
+ 
+-static const int n_wanted_zones = ARRAY_SIZE(asus_ec_thermal_zones);
++/* X1P42100 (Purwa): only CPU clusters 0 and 1 exist */
++static const char * const asus_ec_zones_x1p[] = {
++	"cpu0-0-top-thermal",
++	"cpu1-0-top-thermal",
++	"cpuss0-top-thermal",
++	"gpuss-0-thermal",
++};
++
++static const char * const *asus_ec_thermal_zones = asus_ec_zones_x1e;
++static int n_wanted_zones = ARRAY_SIZE(asus_ec_zones_x1e);
+ 
+ struct asus_ec {
+ 	struct device		*dev;
+@@ -776,7 +793,7 @@ static int asus_ec_lookup_thermal_zones(struct asus_ec *ec)
+ 	int i;
+ 
+ 	ec->n_zones = 0;
+-	for (i = 0; i < ARRAY_SIZE(asus_ec_thermal_zones); i++) {
++	for (i = 0; i < n_wanted_zones; i++) {
+ 		struct thermal_zone_device *tz;
+ 
+ 		tz = thermal_zone_get_zone_by_name(asus_ec_thermal_zones[i]);
+@@ -891,6 +908,11 @@ static bool is_vivobook_s15(struct asus_ec *ec)
+ 		return true;
+ 	}
+ 
++	/* Same EC/fan-controller layout and watchdog behaviour as the S15 */
++	if (strstr(product, "ASUS Vivobook S 16 S3607QA")) {
++		return true;
++	}
++
+ 	return false;
+ }
+ 
+@@ -1295,6 +1317,11 @@ static int asus_ec_probe(struct platform_device *pdev)
+ 
+ 	platform_set_drvdata(pdev, ec);
+ 
++	if (of_machine_is_compatible("qcom,x1p42100")) {
++		asus_ec_thermal_zones = asus_ec_zones_x1p;
++		n_wanted_zones = ARRAY_SIZE(asus_ec_zones_x1p);
++	}
++
+ 	asus_ec_lookup_thermal_zones(ec);
+ 
+ 	/* Probe-time sanity reads. */
+@@ -1375,7 +1402,7 @@ static int asus_ec_probe(struct platform_device *pdev)
+ 	 * PPD will auto-discover via /sys/class/platform-profile/.
+ 	 */
+ 	ec->pp_active = PLATFORM_PROFILE_BALANCED;
+-	#ifdef CONFIG_PLATFORM_PROFILE
++#if IS_ENABLED(CONFIG_EC_ASUS_X1_PLATFORM_PROFILE)
+ 	ec->ppdev = devm_platform_profile_register(dev,
+ 				"asus-zenbook-a14-ec", ec, &asus_ec_pp_ops);
+ 	if (IS_ERR(ec->ppdev)) {
+@@ -1385,7 +1412,7 @@ static int asus_ec_probe(struct platform_device *pdev)
+ 	} else {
+ 		dev_info(dev, "platform_profile registered (quiet/balanced/performance)\n");
+ 	}
+-	#endif
++#endif
+ 
+ 	/* Set up CPU freq QoS for profile-based frequency capping. */
+ 	asus_ec_freq_qos_init(ec);
+@@ -1535,10 +1562,23 @@ static struct platform_driver asus_ec_driver = {
+  */
+ static struct platform_device *asus_ec_pdev;
+ 
++static const char * const asus_ec_machines[] __initconst = {
++	"asus,zenbook-a14-ux3407qa",
++	"asus,zenbook-a14-ux3407ra",
++	"asus,vivobook-s15",
++	"asus,vivobook-s15-x1p4",
++	"asus,vivobook-s16-s3607qa",
++	NULL
++};
++
+ static int __init asus_ec_init(void)
+ {
+ 	int ret;
+ 
++	/* The device is instantiated by hand: never do that on foreign HW */
++	if (!of_machine_compatible_match(asus_ec_machines))
++		return -ENODEV;
++
+ 	ret = platform_driver_register(&asus_ec_driver);
+ 	if (ret)
+ 		return ret;

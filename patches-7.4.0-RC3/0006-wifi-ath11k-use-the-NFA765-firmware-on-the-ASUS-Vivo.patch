@@ -1,0 +1,40 @@
+From 7a24a9d6fa1e9944ac5d2d9934cec5a8a071fc63 Mon Sep 17 00:00:00 2001
+From: "Ingo A. Kubbilun" <ingo.kubbilun@gmail.com>
+Date: Fri, 13 Nov 2026 23:15:10 +0100
+Subject: [PATCH 6/6] wifi: ath11k: use the NFA765 firmware on the ASUS
+ Vivobook S16 S3607QA
+
+The ASUS Vivobook S 16 S3607QA carries a WCN6855 hw2.1 NFA765 module
+(Windows board data: bdwlan_wcn685x_2p1_nfa765a_AS_SA_S3607QA.elf).
+With the default WCN6855 hw2.1 firmware the target crashes right after
+the board data download; the NFA765 build from linux-firmware
+(ath11k/WCN6855/hw2.1/nfa765/) works.
+
+Add the machine to the usecase firmware table, replacing the deprecated
+firmware-name property in the device tree.
+
+An AI coding assistant (Anthropic Claude) analyzed the firmware crash
+logs and drafted this change; I tested it on the device (the NFA765
+build WLAN.HSP.1.1-04866.5...IOE-1 is loaded, Wi-Fi works).
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01DkUieTSPeVK2F2nM8a8WhL
+---
+ drivers/net/wireless/ath/ath11k/core.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/drivers/net/wireless/ath/ath11k/core.c b/drivers/net/wireless/ath/ath11k/core.c
+index 766ae27..37e443a 100644
+--- a/drivers/net/wireless/ath/ath11k/core.c
++++ b/drivers/net/wireless/ath/ath11k/core.c
+@@ -1049,6 +1049,7 @@ static const struct __ath11k_core_usecase_firmware_table {
+ 	const char *compatible;
+ 	const char *firmware_name;
+ } ath11k_core_usecase_firmware_table[] = {
++	{ ATH11K_HW_WCN6855_HW21, "asus,vivobook-s16-s3607qa", "nfa765"},
+ 	{ ATH11K_HW_WCN6855_HW21, "qcom,hamoa-iot-evk", "nfa765"},
+ 	{ ATH11K_HW_WCN6855_HW21, "qcom,lemans-evk", "nfa765"},
+ 	{ ATH11K_HW_WCN6855_HW21, "qcom,monaco-evk", "nfa765"},
+-- 
+2.43.0
+

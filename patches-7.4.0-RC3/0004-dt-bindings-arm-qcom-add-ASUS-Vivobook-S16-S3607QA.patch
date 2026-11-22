@@ -1,0 +1,32 @@
+From 0de7fc8f18f0f8c739055ffbf7236320cea5fed2 Mon Sep 17 00:00:00 2001
+From: "Ingo A. Kubbilun" <ingo.kubbilun@gmail.com>
+Date: Tue, 10 Nov 2026 18:14:49 +0100
+Subject: [PATCH 4/6] dt-bindings: arm: qcom: add ASUS Vivobook S16 S3607QA
+
+Document the ASUS Vivobook S 16 S3607QA, a laptop based on the
+Snapdragon X X1-26-100 (X1P42100, Purwa).
+
+An AI coding assistant (Anthropic Claude) drafted this change; I reviewed
+it and ran dtbs_check.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01DkUieTSPeVK2F2nM8a8WhL
+---
+ Documentation/devicetree/bindings/arm/qcom.yaml | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/Documentation/devicetree/bindings/arm/qcom.yaml b/Documentation/devicetree/bindings/arm/qcom.yaml
+index 121ca55..5440575 100644
+--- a/Documentation/devicetree/bindings/arm/qcom.yaml
++++ b/Documentation/devicetree/bindings/arm/qcom.yaml
+@@ -1307,6 +1307,7 @@ properties:
+       - items:
+           - enum:
+               - asus,vivobook-s15-x1p4
++              - asus,vivobook-s16-s3607qa
+               - hp,omnibook-x14-fe1
+               - lenovo,thinkbook-16
+               - qcom,x1p42100-crd
+-- 
+2.43.0
+
